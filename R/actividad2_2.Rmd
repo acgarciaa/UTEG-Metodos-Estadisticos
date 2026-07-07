@@ -21,8 +21,10 @@ En cada caso se deberá:
 
 - Formular la hipótesis nula y la hipótesis alternativa.
 - Seleccionar el tipo de prueba adecuado.
-- Ejecutar la prueba en R.
+- Ejecutar la prueba en R. 
+- Responda: ¿Cuál es el estadístico de prueba? ¿Cuál es el valor-p?
 - Interpretar el valor-p.
+- ¿Con un nivel de significancia de 5%, cuál es la decisión?
 - Redactar una conclusión en el contexto del problema.
 
 ---
@@ -224,21 +226,6 @@ var.test(setosa$sepal.width,
        versicolor$sepal.width,
        alternative="greater")
 ```
-
-
----
-
-# Actividad
-
-Para cada una de las cuatro pruebas responda:
-
-1. ¿Cuál es la hipótesis nula?
-2. ¿Cuál es la hipótesis alternativa?
-3. ¿Cuál es el estadístico de prueba?
-4. ¿Cuál es el valor-p?
-5. ¿Con un nivel de significancia de 5%, cuál es la decisión?
-6. Redacte una conclusión en el contexto del problema.
-
 
 
 ---
