@@ -1,0 +1,253 @@
+---
+title: "Actividad: Pruebas de hipótesis con el conjunto de datos Iris"
+output: html_document
+date: "2026-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+
+# Pruebas de hipótesis con el conjunto de datos Iris
+
+## Objetivo
+
+En esta actividad se utilizará el conjunto de datos **Iris** para formular y realizar pruebas de hipótesis sobre la media poblacional utilizando R.
+
+En cada caso se deberá:
+
+- Formular la hipótesis nula y la hipótesis alternativa.
+- Seleccionar el tipo de prueba adecuado.
+- Ejecutar la prueba en R.
+- Interpretar el valor-p.
+- Redactar una conclusión en el contexto del problema.
+
+---
+
+# Paso 1. Lectura del conjunto de datos
+
+```{r}
+
+
+iris <- read_csv("iris_dataset.csv")
+
+head(iris)
+
+str(iris)
+```
+
+---
+
+# Paso 2. Exploración del conjunto de datos
+
+Antes de realizar cualquier prueba de hipótesis es importante conocer la estructura de los datos.
+
+```{r}
+summary(iris)
+
+table(iris$variety)
+```
+
+Obtengamos algunos estadísticos descriptivos por especie.
+
+```{r}
+
+iris %>%
+  group_by(variety) %>%
+  summarise(
+    n = n(),
+    media_petal = mean(petal.length),
+    sd_petal = sd(petal.length),
+    media_sepal_width = mean(sepal.width),
+    sd_sepal_width = sd(sepal.width)
+  )
+```
+
+---
+
+# Hipótesis 1
+
+## El largo promedio de los pétalos de las setosas es mayor a 1 cm.
+
+Sea $\mu$ el largo promedio del pétalo de la especie **Setosa**.
+
+\[
+H_0:\mu \leq 1
+\]
+
+\[
+H_1:\mu>1
+\]
+
+```{r}
+setosa <- iris %>%
+  filter(variety=="setosa")
+
+ggplot(setosa, aes(x=petal.length))+geom_histogram(bins = 6)+theme_classic()
+
+t.test(setosa$petal.length,
+       mu=1,
+       alternative="greater")
+```
+
+### Interpretación
+
+Interprete el valor-p obtenido y redacte una conclusión.
+
+---
+
+# Hipótesis 2
+
+## El largo promedio de los pétalos de las setosas es igual a 1.5 cm.
+
+Sea $\mu$ el largo promedio del pétalo de la especie **Setosa**.
+
+\[
+H_0:\mu=1.5
+\]
+
+\[
+H_1:\mu\neq1.5
+\]
+
+```{r}
+t.test(setosa$petal.length,
+       mu=1.5,
+       alternative="two.sided")
+```
+
+### Interpretación
+
+Interprete el resultado obtenido.
+
+---
+
+# Hipótesis 3
+
+## El largo promedio de los pétalos de las setosas es menor que el de las versicolor.
+
+Sean
+
+- $\mu_1$ = largo promedio del pétalo de las Setosa.
+- $\mu_2$ = largo promedio del pétalo de las Versicolor.
+
+\[
+H_0:\mu_1\geq\mu_2
+\]
+
+\[
+H_1:\mu_1<\mu_2
+\]
+
+```{r}
+versicolor <- iris %>%
+  filter(variety=="versicolor")
+
+ggplot(versicolor, aes(x=petal.length))+geom_histogram(bins = 6)+theme_classic()
+
+
+t.test(setosa$petal.length,
+       versicolor$petal.length,
+       alternative="less")
+```
+
+### Interpretación
+
+Interprete el resultado obtenido.
+
+---
+
+# Hipótesis 4
+
+## En promedio el sépalo de las setosas es al menos 1 cm más ancho que el de las versicolor.
+
+Sean
+
+- $\mu_1$ = ancho promedio del sépalo de las Setosa.
+- $\mu_2$ = ancho promedio del sépalo de las Versicolor.
+
+La hipótesis puede escribirse como
+
+\[
+H_0:\mu_1-\mu_2\leq 1
+\]
+
+\[
+H_1:\mu_1-\mu_2>1
+\]
+
+
+```{r}
+t.test(setosa$sepal.width,
+       versicolor$sepal.width,
+       alternative="greater", mu=1)
+```
+
+### Interpretación
+
+Interprete el resultado obtenido.
+
+---
+
+
+
+# Hipótesis 5
+
+## El ancho del sépalo de las setosas es más variable que el de las versicolor.
+
+Sean
+
+- $\sigma^2_1$ = la varianza del ancho del sépalo de las Setosa.
+- $\sigma^2_2$ = la varianza del ancho del sépalo de las Versicolor.
+
+La hipótesis puede escribirse como
+
+
+\[
+H_0:\sigma^2_1 \leq \sigma^2_2
+\]
+
+\[
+H_1:\sigma^2_1>\sigma^2_2
+\]
+
+
+```{r}
+ggplot(setosa, aes(x=sepal.width))+geom_histogram(bins = 6)+theme_classic()
+ggplot(versicolor, aes(x=sepal.width))+geom_histogram(bins = 6)+theme_classic()
+
+
+var.test(setosa$sepal.width,
+       versicolor$sepal.width,
+       alternative="greater")
+```
+
+
+---
+
+# Actividad
+
+Para cada una de las cuatro pruebas responda:
+
+1. ¿Cuál es la hipótesis nula?
+2. ¿Cuál es la hipótesis alternativa?
+3. ¿Cuál es el estadístico de prueba?
+4. ¿Cuál es el valor-p?
+5. ¿Con un nivel de significancia de 5%, cuál es la decisión?
+6. Redacte una conclusión en el contexto del problema.
+
+
+
+---
+
+
+# Preguntas de reflexión
+
+1. ¿Cuál es la diferencia entre una prueba unilateral y una bilateral?
+2. ¿En cuál de las cinco pruebas se utilizó cada una?
+3. ¿Qué ocurriría si se utilizara un nivel de significancia de 1%?
+4. ¿Qué supuestos tiene la prueba t de Student?
+5. ¿Qué supuestos tiene la prueba F de igualdad de varianzas?
