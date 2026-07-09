@@ -1,0 +1,86 @@
+---
+title: "Actividad: Regresión lineal simple con el conjunto de datos Iris"
+output: html_document
+date: "2026-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+
+# Regresión lineal simple con el conjunto de datos Iris
+
+## Objetivo
+
+En esta actividad se utilizará el conjunto de datos **Iris** para estimar un modelo de regresión lineal para modelar el largo del pétalo en base al largo del sépalo de la variedad Virginica.
+
+Para esta actividad deberá:
+
+- Estimar el modelo de regresión lineal simple.
+- Proporción la ecuación de la recta estimada.
+- Realizar la prueba de signficancia para la pendiente (utilice un nivel de signficancia del 5\%).
+- Interpretar el coeficiente estimado de la pendiente. 
+- Realizar e interpretar un intervalo de confianza para la pendiente.
+- Realizar e interpretar un intervalo de confianza para el largo del pétalo esperado de virginicas con sépalos de 6 cm de largo.  
+- Realizar e interpretar un intervalo de confianza para el largo del pétalo de cada virginica con sépalo de 6 cm de largo.  
+- Redactar un resumen del análisis en el contexto del problema.
+
+
+# Paso 1. Lectura del conjunto de datos
+```{r}
+
+iris <- read_csv("iris_dataset.csv")
+
+head(iris)
+
+str(iris)
+```
+
+# Paso 2. Preparación del conjunto de datos para el análisis
+
+```{r}
+#set de datos de virginicas
+
+virginica <- iris %>%
+  filter(variety=="virginica")
+
+#explorar relación lineal gráficamente
+ggplot(virginica, aes(x=sepal.length, y=petal.length))+geom_point()+theme_classic()
+
+#correlación
+cor(virginica$sepal.length, virginica$petal.length)
+```
+# Paso 3. Estimación del modelo de regresión lineal simple
+
+```{r}
+modelo=lm(petal.length~sepal.length, virginica)
+
+summary(modelo)
+
+ggplot(virginica, aes(x=sepal.length, y=petal.length))+geom_point()+
+  geom_smooth(method = "lm", se = TRUE, color = "red", formula = y ~ x)+
+  theme_classic()
+
+```
+
+# Paso 4. Inferencias
+
+```{r}
+#Pruebas de hipótesis (disponibles en el resumen del modelo estimado)
+summary(modelo)
+
+#Intervalo de confianza para beta1
+confint(modelo, level=0.95)
+
+#Intervalo de confianza para la media de y cuando x=6
+predict(modelo, newdata = data.frame(sepal.length=6), interval = "confidence", level = 0.95)
+
+
+#Intervalo de predicción para una nueva observación y0 cuando x=6
+predict(modelo, newdata = data.frame(sepal.length=6), interval = "prediction", level = 0.95)
+```
+
+
