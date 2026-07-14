@@ -1,0 +1,238 @@
+---
+title: "Actividad: Regresión lineal múltiple con el conjunto de datos sma"
+output: html_document
+date: "2026-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(GGally)
+```
+
+# Regresión lineal simple con el conjunto de datos sma
+
+## Objetivo
+
+En esta actividad se utilizará el conjunto de datos **sma** para estimar un modelo de regresión lineal múltiple para modelar la tasa de delitos en las áreas metropolitanas estadounidenses.  
+
+Para esta actividad deberá:
+
+- Estimar el modelo de regresión lineal múltiple adecuado.
+- Proporción la ecuación de la recta estimada.
+- Interpretar los coeficientes de regresión estimados y su signficancia.
+- Realizar la prueba de signficancia general (utilice un nivel de signficancia del 5\%) e intrepretar el coeficiente de determinación.
+- Realizar la comprobación de supuestos.
+- Redactar un resumen del análisis en el contexto del problema.
+
+
+## Descripción del conjunto de datos
+
+## Dataset: SMA  
+
+Considere los datos sobre 141 áreas metropolitanas estándar en los Estados Unidos (sma.txt). Los datos proporcionan información sobre 11 variables para cada área para el período 1976-1977. Las variables proporcionadas son las siguientes:  
+
+
+Área: tamaño de la tierra en millas cuadradas  
+Población total: estimada en miles  
+Porcentaje ciudad:  porcentaje de la población en el centro de la ciudad / ciudades  
+Porcentaje senior: porcentaje de personas mayores de $\leq$ 65 años  
+Médicos: número de médicos profesionalmente activos    
+Camas de hospital: número total de camas de hospital    
+Graduados:  porcentaje de adultos que terminaron la escuela secundaria    
+Laboral: número de personas en la fuerza laboral en miles    
+Ingresos: ingresos totales en 1976 en millones de dólares    
+Delitos: número de delitos graves    
+Región: región geográfica según el Censo de los Estados Unidos: 1=Noreste, 2=Norte-Centro, 3=Sur, 4=Oeste  
+
+La variable respuesta que estamos interesados en modelar es la tasa de delitos por cada mil habitantes (Delitos/Población total). 
+
+
+
+
+
+
+# Paso 1. Lectura del conjunto de datos
+
+```{r}
+sma <- read.table("sma.txt", row.names = 1)
+names(sma) <- c('Area', 'PobT', 'PCiudad', 'PSenior', 'Medicos', 'CHosp', 'Grad', 'Laboral', 'Ingresos', 'Delitos', 'Region')
+
+# Variable de respuesta
+sma$TDelitos <- sma$Delitos/sma$PobT
+
+
+str(iris)
+``` 
+
+```{r}
+
+iris <- read_csv("iris_dataset.csv")
+
+head(iris)
+
+str(iris)
+```
+
+# Paso 2. Preparación del conjunto de datos para el análisis y exploración gráfica
+
+```{r}
+
+# Variable de respuesta
+sma$TDelitos <- sma$Delitos/sma$PobT
+
+#eliminar variables Delitos y PobT, dado que ya fueron usadas para crear la variable de respuesta
+
+sma<-sma%>%select(!c(PobT, Delitos))
+
+# Reconocer la variable región como categórica
+sma$Region<-as.factor(sma$Region)
+
+#explorar relaciones lineales gráficamente
+ggpairs(sma)
+
+#transformar variables X con valores concentrados
+sma_log <- sma %>%
+  mutate(across(
+    .cols = c(Area, Medicos, CHosp, Laboral, Ingresos),   # columnas a transformar
+    .fns = ~ log(.),         # función a aplicar
+    .names = "log_{.col}"    # nuevo nombre de columna
+  )) %>% select(! c(Area, Medicos, CHosp, Laboral, Ingresos))
+
+sma_log<-sma_log %>% select(! c(TDelitos)) %>% mutate(TDelitos=sma$TDelitos)
+
+ggpairs(sma_log)
+
+#detectar problemas de multicolinealidad (VIF >10)
+diag(solve(cor(sma_log%>% select(!c(TDelitos,Region)))))
+
+#seleccionar solo 1 de las variables muy correlacionadas
+cor(sma_log %>% select(c(TDelitos, log_Medicos, log_CHosp, log_Laboral, log_Ingresos)))
+sma_log<-sma_log %>% select(! c(log_CHosp, log_Laboral)) 
+diag(solve(cor(sma_log%>% select(!c(TDelitos,Region)))))
+
+sma_log<-sma_log %>% select(! c(log_Medicos)) 
+diag(solve(cor(sma_log%>% select(!c(TDelitos,Region)))))
+
+```
+# Paso 3. Estimación del modelo de regresión lineal múltiple
+
+```{r}
+modelo=lm(TDelitos~., data = sma_log)
+
+summary(modelo)
+
+```
+
+
+# Paso 4. Comprobación de supuestos
+
+```{r}
+#Función para comprobación de supuestos personalizada
+
+# ------------------------------------------------- #
+#        Análisis de Residuos Studentizados         #
+# ------------------------------------------------- #
+
+
+diagnorm = function(fit.model){
+  # fit.model: objeto con el resultado del modelo normal 
+  # lineal homocedástico obtenido a través de la función "lm"
+  
+  if (!is(fit.model, "lm")) stop("fit.model debe ser un objeto retornado por la función lm.")
+
+  X = model.matrix(fit.model)
+  n = nrow(X)
+  p = ncol(X)
+  H = X%*%solve(t(X)%*%X)%*%t(X)
+  h = diag(H)
+  lms = summary(fit.model)
+  s = lms$sigma
+  r = resid(lms)
+  ts = r/(s*sqrt(1-h))
+  di = (1/p)*(h/(1-h))*(ts^2)
+  si = lm.influence(fit.model)$sigma
+  tsi = r/(si*sqrt(1-h))
+  a = max(tsi)
+  b = min(tsi)
+  #
+  dados2 = data.frame(x=1:length(tsi), tsi, fit=fitted(fit.model))
+  f1 = ggplot(dados2, aes(x=x, y=tsi)) + geom_point() +
+    geom_hline(yintercept=c(-2, 0, 2), linetype="dashed", color="red") + 
+    labs(x="Índice", y="Residuos Studentizados") + theme_bw()
+  #
+  f2 = ggplot(dados2, aes(x=fit, y=tsi)) + geom_point() +
+    geom_hline(yintercept=c(-2, 0, 2), linetype="dashed", color="red") + 
+    labs(x="Valores ajustados", y="Residuos Studentizados") + theme_bw()
+  #
+  f3 = ggplot(dados2, aes(x=tsi, y=after_stat(density))) + geom_histogram(bins=11, fill="grey", color="black") +
+    labs(x="Residuos Studentizados", y="Densidad") + theme_bw()
+  #
+  ident = diag(n)
+  epsilon = matrix(0,n,100)
+  e  = matrix(0,n,100)
+  e1 = numeric(n)
+  e2 = numeric(n)
+  #
+  for(i in 1:100){
+    epsilon[,i] = rnorm(n,0,1)
+    e[,i] = (ident - H)%*%epsilon[,i]
+    u = diag(ident - H)
+    e[,i] = e[,i]/sqrt(u)
+    e[,i] = sort(e[,i]) }
+  #
+  for(i in 1:n){
+    eo = sort(e[i,])
+    e1[i] = (eo[2]+eo[3])/2
+    e2[i] = (eo[97]+eo[98])/2 }
+  #
+  med = apply(e,1,mean)
+  faixa = range(tsi,e1,e2)
+  #
+  dados3 = data.frame(e1, e2, med)
+  q1 = data.frame(qqnorm(tsi, plot.it=FALSE))
+  q2 = data.frame(qqnorm(e1, plot.it=FALSE))
+  q3 = data.frame(qqnorm(e2, plot.it=FALSE))
+  q4 = data.frame(qqnorm(med, plot.it=FALSE))
+  
+  f4 = ggplot() + geom_line(data=q2, aes(x=x, y=y)) + ylim(faixa) +
+    geom_line(data=q3, aes(x=x, y=y)) + geom_line(data=q4, aes(x=x, y=y), color="red", linetype="dashed") +
+    geom_point(data=q1, aes(x=x, y=y), size=0.6) + labs(x="Percentiles de la N(0,1)", y="Residuos Studentizados") + theme_bw()
+  
+  gridExtra::grid.arrange(f1, f2, f3, f4, nrow=2)
+  
+  return(tsi)
+}
+
+
+```
+
+
+```{r}
+diagnorm(modelo)
+```
+
+
+# Paso 5. Inferencias
+
+```{r}
+#Pruebas de hipótesis (disponibles en el resumen del modelo estimado)
+summary(modelo)
+
+#Intervalo de confianza para coeficientes beta
+confint(modelo, level=0.95)
+
+
+#Intervalo de predicción para un área metropolitana de la región sur con las características promedio de la región
+
+
+newdf=sma_log%>%filter(Region=="3") %>% summarise(across(.fns = ~ mean(.)))
+newdf$Region<-"3"
+
+predict(modelo, newdata = newdf, interval = "prediction", level = 0.95)
+```
+
+
+
