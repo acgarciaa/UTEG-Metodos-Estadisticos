@@ -1,0 +1,202 @@
+---
+title: "Actividad: ACP con el conjunto de datos Iris"
+output: html_document
+date: "2026-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+
+
+# Actividad 3.3. Análisis de Componentes Principales (ACP)
+
+## Objetivo
+
+En esta actividad se utilizará el conjunto de datos **Iris** para realizar una reducción de dimensionalidad mediante el Análisis de Componentes Principales (ACP).
+
+Al finalizar la actividad será capaz de:
+
+- Realizar un ACP.
+- Extraer los componentes principales.
+- Interpretar las cargas de los componentes.
+- Revisar la variabilidad explicada.
+- Interpretar un biplot.
+
+---
+
+# Paso 1. Lectura del conjunto de datos
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggbiplot)
+
+iris <- read_csv("iris_dataset.csv")
+
+head(iris)
+
+str(iris)
+```
+
+**Pregunta 1**
+
+¿Cuántas observaciones y variables tiene el conjunto de datos?
+
+---
+
+# Paso 2. Selección de variables
+
+El ACP únicamente puede realizarse sobre variables numéricas.
+
+```{r}
+iris_num <- iris %>%
+  select(-variety)
+
+head(iris_num)
+```
+
+**Pregunta 2**
+
+¿Por qué la variable **variety** no se incluye en el ACP?
+
+---
+
+# Paso 3. Realizar el ACP
+
+```{r}
+acp <- prcomp(iris_num,
+              center = TRUE,
+              scale. = TRUE)
+
+summary(acp)
+```
+
+---
+
+# Paso 4. Componentes principales
+
+Visualice las coordenadas de las observaciones sobre los componentes principales.
+
+```{r}
+head(acp$x)
+```
+
+**Pregunta 3**
+
+¿Cuántos componentes principales se obtuvieron?
+
+---
+
+# Paso 5. Cargas de los componentes
+
+Las cargas indican cuánto contribuye cada variable a cada componente principal.
+
+```{r}
+acp$rotation
+```
+
+**Pregunta 4**
+
+¿Qué variables tienen mayor influencia sobre el primer componente principal?
+
+---
+
+**Pregunta 5**
+
+¿Qué variables tienen mayor influencia sobre el segundo componente principal?
+
+---
+
+# Paso 6. Variabilidad explicada
+
+```{r}
+summary(acp)
+```
+
+También puede obtener la proporción de variabilidad explicada.
+
+```{r}
+var_exp <- acp$sdev^2 / sum(acp$sdev^2)
+
+var_exp
+```
+
+Y la variabilidad acumulada.
+
+```{r}
+cumsum(var_exp)
+```
+
+**Pregunta 6**
+
+¿Cuánta variabilidad explica el primer componente principal?
+
+---
+
+**Pregunta 7**
+
+¿Cuántos componentes principales conservaría para explicar al menos el 90% de la variabilidad?
+
+---
+
+# Paso 7. Scree Plot
+
+```{r}
+plot(acp,
+     type = "l")
+```
+
+**Pregunta 8**
+
+¿En qué componente parece estabilizarse la variabilidad explicada?
+
+---
+
+# Paso 8. Biplot
+
+```{r}
+g <- ggbiplot(acp,
+              obs.scale = 1,
+              var.scale = 1,
+              groups = iris$variety,
+              ellipse = TRUE,
+              circle = TRUE,
+              ellipse.prob = 0.68)
+
+g <- g +
+  scale_color_discrete(name = "") +
+  theme(
+    legend.position = "top",
+    legend.direction = "horizontal"
+  )
+
+print(g)
+```
+
+**Pregunta 9**
+
+¿Se observa separación entre las especies?
+
+---
+
+**Pregunta 10**
+
+¿Qué variables parecen ser responsables de dicha separación?
+
+---
+
+# Conclusiones
+
+Redacte una breve conclusión sobre el ACP realizado.
+
+______________________________________________________________________
+
+______________________________________________________________________
+
+______________________________________________________________________
+
+______________________________________________________________________
